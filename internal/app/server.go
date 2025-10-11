@@ -45,7 +45,7 @@ func InitializeServer(router *gin.Engine, rdb *redis.Client, redisContext contex
 	// --- ส่วนของ Graceful Shutdown ---
 	
 	// 1. สร้าง Channel เพื่อรอรับ OS Signal
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<- quit
 
