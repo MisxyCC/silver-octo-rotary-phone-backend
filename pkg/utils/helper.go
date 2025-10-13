@@ -5,7 +5,9 @@ import (
 	"log"
 	"sync"
 	"time"
+
 	"github.com/go-redis/redis/v8"
+	"github.com/joho/godotenv"
 )
 
 
@@ -36,7 +38,6 @@ func StartWorker(workerCtx context.Context, workerID string, wg *sync.WaitGroup,
 			log.Printf("Worker: [%s] Shutting down...\n", workerID)
 			return
 		default:
-			const streamName = "approval_stream"
 			streams, err := rdb.XRead(redisContext, &redis.XReadArgs{
 				Streams: []string {GetRedisStreamName(), "$"},
 				Count: 1,
@@ -60,5 +61,12 @@ func StartWorker(workerCtx context.Context, workerID string, wg *sync.WaitGroup,
 				}
 			}
 		}
+	}
+}
+
+func LoadEnvironmentVars() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
 	}
 }

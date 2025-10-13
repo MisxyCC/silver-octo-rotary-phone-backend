@@ -28,8 +28,6 @@ func InitializeServer(router *gin.Engine, rdb *redis.Client, redisContext contex
 		go utils.StartWorker(workerCtx, workerID, &wg, *rdb, redisContext)
 	}
 
-
-	
 	srv := &http.Server {
 		Addr: ":8080",
 		Handler: router,
