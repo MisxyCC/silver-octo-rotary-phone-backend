@@ -11,16 +11,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// commands is the central channel to communicate with the manager.
-var commands = make(chan models.ClientCommand)
+// clientCommands is the central channel to communicate with the manager.
+var clientCommands = make(chan models.ClientCommand)
+// connManagerCommands is the channel for managing SSE connections.
+var connManagerCommands = make(chan models.ConnManagerCommand)
 
 func main() {
 	utils.LoadEnvironmentVars()
 	redisAddress := os.Getenv("REDIS_ADDRESS")
 	rdb := core.InitializeRedisConnection(redisAddress)
 	redisContext := utils.InitializeRedisContext()
-	go core.ClientChannelManager(commands)
-	go core.SubscribeToApprovalEvents(rdb, commands)
+	go core.ClientChannelManager(clientCommands)
+	go core.SSEConnectionManager(connManagerCommands) // Start the new connection manager
+	go core.SubscribeToApprovalEvents(rdb, clientCommands)
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"http://localhost:5173"},
@@ -28,6 +31,6 @@ func main() {
 		AllowHeaders: []string{"Origin", "Content-Type"},
 	}))
 	router.POST("/submit", handlers.InitSubmitHandler(rdb, redisContext))
-	router.GET("/events/:job_id", handlers.InitSSEHandler(commands))
-	core.InitializeServer(router, rdb, redisContext)
+	router.GET("/events/:job_id", handlers.InitSSEHandler(clientCommands, connManagerCommands))
+	core.InitializeServer(router, rdb, redisContext, connManagerCommands)
 }

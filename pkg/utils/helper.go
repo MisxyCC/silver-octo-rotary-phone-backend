@@ -30,6 +30,10 @@ func GetRedisChannelName() string {
 	return "approval_events"
 }
 
+func GetRedisGroupName() string {
+	return "approval_workers"
+}
+
 func LoadEnvironmentVars() {
 	err := godotenv.Load()
 	if err != nil {

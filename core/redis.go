@@ -19,6 +19,16 @@ func InitializeRedisConnection(redisAddress string) *redis.Client{
 		log.Fatalf("Could not connect to Redis: %v", err)
 	}
 	log.Println("Connected to Redis instance successfully.")
+
+	err = rdb.XGroupCreateMkStream(
+		utils.InitializeRedisContext(), 
+		utils.GetRedisStreamName(), 
+		utils.GetRedisGroupName(), "$").Err()
+	if err != nil && err.Error() != "BUSYGROUP Consumer Group name already exists" {
+		log.Fatalf("Error creating Redis Consumer Group: %v", err)
+		return nil
+	}
+	log.Printf("Consumer group '%s' is ready.\n", utils.GetRedisGroupName())
 	return rdb
 }
 
@@ -34,7 +44,7 @@ func SubscribeToApprovalEvents(rdb *redis.Client, command chan models.ClientComm
 		log.Printf("Received completion event for job: %s", jobID)
 		// Send a command to the manager to forward the message to the client.
 		command <- models.ClientCommand {
-			Action: utils.SendMessage,
+			Action: models.SendMessage,
 			JobID: jobID, 
 			Message: "approved",
 		}
