@@ -17,7 +17,6 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-
 func InitializeServer(router *gin.Engine, rdb *redis.Client, redisContext context.Context, connManagerCommands chan models.ConnManagerCommand) {
 	workerCtx, cancelWorkers := utils.InitializeWorkerContext()
 	numWorkers := 3
@@ -29,13 +28,13 @@ func InitializeServer(router *gin.Engine, rdb *redis.Client, redisContext contex
 		go startWorker(workerCtx, workerID, &wg, *rdb, redisContext)
 	}
 
-	srv := &http.Server {
-		Addr: ":8080",
+	srv := &http.Server{
+		Addr:    ":8080",
 		Handler: router,
 	}
 
 	// รัน Server ใน Goroutine เพื่อป้องกันการ Block
-	go func () {
+	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
@@ -48,16 +47,16 @@ func startWorker(workerCtx context.Context, workerID string, wg *sync.WaitGroup,
 	log.Printf("Worker: [%s] started...\n", workerID)
 	for {
 		select {
-		case <- workerCtx.Done():
+		case <-workerCtx.Done():
 			log.Printf("Worker: [%s] Shutting down...\n", workerID)
 			return
 		default:
 			streams, err := rdb.XReadGroup(redisContext, &redis.XReadGroupArgs{
-				Group: utils.GetRedisGroupName(),
-				Consumer: workerID, // Each worker identifies itself uniquely
-				Streams: []string {utils.GetRedisStreamName(), ">"}, // ">" means get new, un-delivered messages
-				Count: 1,
-				Block: 2  * time.Second,
+				Group:    utils.GetRedisGroupName(),
+				Consumer: workerID,                                  // Each worker identifies itself uniquely
+				Streams:  []string{utils.GetRedisStreamName(), ">"}, // ">" means get new, un-delivered messages
+				Count:    1,
+				Block:    2 * time.Second,
 			}).Result()
 
 			if err != nil {
@@ -87,11 +86,11 @@ func startWorker(workerCtx context.Context, workerID string, wg *sync.WaitGroup,
 }
 
 func handleShutdownGracefully(cancelWorkers context.CancelFunc, wg *sync.WaitGroup, srv *http.Server, rdb *redis.Client, connManagerCommands chan models.ConnManagerCommand) {
-	
+
 	// 1. สร้าง Channel เพื่อรอรับ OS Signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<- quit
+	<-quit
 
 	log.Println("Shutdown signal received, initiating graceful shutdown...")
 
@@ -99,7 +98,7 @@ func handleShutdownGracefully(cancelWorkers context.CancelFunc, wg *sync.WaitGro
 	var wgCloseConns sync.WaitGroup
 	wgCloseConns.Add(1)
 
-	connManagerCommands <- models.ConnManagerCommand{Action:models.ConnCloseAll, Wg: &wgCloseConns}
+	connManagerCommands <- models.ConnManagerCommand{Action: models.ConnCloseAll, Wg: &wgCloseConns}
 	wgCloseConns.Wait()
 	log.Println("All SSE connections have been closed.")
 

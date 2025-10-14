@@ -10,7 +10,7 @@ import (
 func SSEConnectionManager(connManagerCommands chan models.ConnManagerCommand) {
 	connections := make(map[string]net.Conn)
 	log.Println("SSE Connection Manager started.")
-	
+
 	for cmd := range connManagerCommands {
 		switch cmd.Action {
 		case models.ConnAdd:
@@ -29,5 +29,5 @@ func SSEConnectionManager(connManagerCommands chan models.ConnManagerCommand) {
 			}
 		}
 	}
-	 
+
 }

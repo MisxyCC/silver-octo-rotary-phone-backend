@@ -13,6 +13,7 @@ import (
 
 // clientCommands is the central channel to communicate with the manager.
 var clientCommands = make(chan models.ClientCommand)
+
 // connManagerCommands is the channel for managing SSE connections.
 var connManagerCommands = make(chan models.ConnManagerCommand)
 

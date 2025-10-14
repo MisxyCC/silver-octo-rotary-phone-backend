@@ -2,13 +2,12 @@ package utils
 
 import (
 	"context"
-	"log"	
-	"time"
 	"github.com/joho/godotenv"
+	"log"
+	"time"
 )
 
-
-func InitializeWorkerContext() (context.Context, context.CancelFunc){
+func InitializeWorkerContext() (context.Context, context.CancelFunc) {
 	workerCtx, cancelWorker := context.WithCancel(context.Background())
 	return workerCtx, cancelWorker
 }
