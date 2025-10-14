@@ -15,7 +15,7 @@ func InitSubmitHandler(rdb *redis.Client, redisContext context.Context) gin.Hand
 	return func(c *gin.Context) {
 		var jsonRequest models.ApprovalRequest
 		if err := c.ShouldBindJSON(&jsonRequest); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: err.Error()})
 			return
 		}
 		job := models.ApprovalJob{
@@ -28,7 +28,7 @@ func InitSubmitHandler(rdb *redis.Client, redisContext context.Context) gin.Hand
 
 		jobValues, err := job.ToMap()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to prepare job data"})
 			return
 		}
 		_, err = rdb.XAdd(redisContext, &redis.XAddArgs{
@@ -37,9 +37,10 @@ func InitSubmitHandler(rdb *redis.Client, redisContext context.Context) gin.Hand
 		}).Result()
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Fail to submit the request"})
+			c.JSON(http.StatusInternalServerError, 
+				models.ErrorResponse{Error: "Failed to submit the request"})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "Request submitted successfully"})
+		c.JSON(http.StatusOK, gin.H{"message": "Request submitted successfully", "job_id": job.ID})
 	}
 }

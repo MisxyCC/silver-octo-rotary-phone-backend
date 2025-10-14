@@ -1,4 +1,4 @@
-package app
+package core
 
 import (
 	"context"
@@ -25,7 +25,7 @@ func InitializeServer(router *gin.Engine, rdb *redis.Client, redisContext contex
 	for i := 1; i <= numWorkers; i++ {
 		wg.Add(1)
 		workerID := fmt.Sprintf("worker-%d", i)
-		go utils.StartWorker(workerCtx, workerID, &wg, *rdb, redisContext)
+		go startWorker(workerCtx, workerID, &wg, *rdb, redisContext)
 	}
 
 	srv := &http.Server {
@@ -39,8 +39,48 @@ func InitializeServer(router *gin.Engine, rdb *redis.Client, redisContext contex
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
+	handleShutdownGracefully(cancelWorkers, &wg, srv, rdb)
+}
 
-	// --- ส่วนของ Graceful Shutdown ---
+func startWorker(workerCtx context.Context, workerID string, wg *sync.WaitGroup, rdb redis.Client, redisContext context.Context) {
+	defer wg.Done()
+	log.Printf("Worker: [%s] started...\n", workerID)
+	for {
+		select {
+		case <- workerCtx.Done():
+			log.Printf("Worker: [%s] Shutting down...\n", workerID)
+			return
+		default:
+			streams, err := rdb.XRead(redisContext, &redis.XReadArgs{
+				Streams: []string {utils.GetRedisStreamName(), "$"},
+				Count: 1,
+				Block: 2  * time.Second,
+			}).Result()
+
+			if err != nil {
+				if err != redis.Nil {
+					log.Printf("Worker: [%s] Error reading from stream: %v\n", workerID, err)
+				}
+				continue
+			}
+
+			for _, stream := range streams {
+				for _, message := range stream.Messages {
+					jobID := message.Values["id"].(string)
+					user := message.Values["user"].(string)
+					log.Printf("Worker [%s] : Processing job %s for user %s...\n", workerID, jobID, user)
+					time.Sleep(5 * time.Second)
+					log.Printf("Worker [%s] : Job %s has been approved.\n", workerID, jobID)
+
+					// Publish completion event to Redis Pub/Sub for real-time notification.
+					rdb.Publish(utils.InitializeRedisContext(), utils.GetRedisChannelName(), jobID)
+				}
+			}
+		}
+	}
+}
+
+func handleShutdownGracefully(cancelWorkers context.CancelFunc, wg *sync.WaitGroup, srv *http.Server, rdb *redis.Client) {
 	
 	// 1. สร้าง Channel เพื่อรอรับ OS Signal
 	quit := make(chan os.Signal, 1)
