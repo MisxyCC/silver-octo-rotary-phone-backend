@@ -2,13 +2,13 @@ package utils
 
 import (
 	"context"
-	"log"	
+	"log"
 	"time"
+
 	"github.com/joho/godotenv"
 )
 
-
-func InitializeWorkerContext() (context.Context, context.CancelFunc){
+func InitializeWorkerContext() (context.Context, context.CancelFunc) {
 	workerCtx, cancelWorker := context.WithCancel(context.Background())
 	return workerCtx, cancelWorker
 }
@@ -18,7 +18,7 @@ func InitializeServerContext(timeDuration time.Duration) (context.Context, conte
 	return ctxShutdown, cancelShutdown
 }
 
-func InitializeRedisContext() context.Context {
+func GetRedisContext() context.Context {
 	return context.Background()
 }
 

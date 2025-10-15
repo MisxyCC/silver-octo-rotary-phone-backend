@@ -37,7 +37,7 @@ func InitSubmitHandler(rdb *redis.Client, redisContext context.Context) gin.Hand
 		}).Result()
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, 
+			c.JSON(http.StatusInternalServerError,
 				models.ErrorResponse{Error: "Failed to submit the request"})
 			return
 		}

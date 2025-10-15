@@ -8,9 +8,8 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-
-func InitializeRedisConnection(redisAddress string) *redis.Client{
-	redisContext := utils.InitializeRedisContext()
+func InitializeRedisConnection(redisAddress string) *redis.Client {
+	redisContext := utils.GetRedisContext()
 	rdb := redis.NewClient(&redis.Options{
 		Addr: redisAddress,
 	})
@@ -21,8 +20,8 @@ func InitializeRedisConnection(redisAddress string) *redis.Client{
 	log.Println("Connected to Redis instance successfully.")
 
 	err = rdb.XGroupCreateMkStream(
-		utils.InitializeRedisContext(), 
-		utils.GetRedisStreamName(), 
+		utils.GetRedisContext(),
+		utils.GetRedisStreamName(),
 		utils.GetRedisGroupName(), "$").Err()
 	if err != nil && err.Error() != "BUSYGROUP Consumer Group name already exists" {
 		log.Fatalf("Error creating Redis Consumer Group: %v", err)
@@ -34,7 +33,7 @@ func InitializeRedisConnection(redisAddress string) *redis.Client{
 
 func SubscribeToApprovalEvents(rdb *redis.Client, command chan models.ClientCommand) {
 	redisChannelName := utils.GetRedisChannelName()
-	pubsub := rdb.Subscribe(utils.InitializeRedisContext(), redisChannelName)
+	pubsub := rdb.Subscribe(utils.GetRedisContext(), redisChannelName)
 	defer pubsub.Close()
 
 	ch := pubsub.Channel()
@@ -43,9 +42,9 @@ func SubscribeToApprovalEvents(rdb *redis.Client, command chan models.ClientComm
 		jobID := msg.Payload
 		log.Printf("Received completion event for job: %s", jobID)
 		// Send a command to the manager to forward the message to the client.
-		command <- models.ClientCommand {
-			Action: models.SendMessage,
-			JobID: jobID, 
+		command <- models.ClientCommand{
+			Action:  models.SendMessage,
+			JobID:   jobID,
 			Message: "approved",
 		}
 	}
