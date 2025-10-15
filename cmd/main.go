@@ -21,7 +21,7 @@ func main() {
 	utils.LoadEnvironmentVars()
 	redisAddress := os.Getenv("REDIS_ADDRESS")
 	rdb := core.InitializeRedisConnection(redisAddress)
-	redisContext := utils.InitializeRedisContext()
+	redisContext := utils.GetRedisContext()
 	go core.ClientChannelManager(clientCommands)
 	go core.SSEConnectionManager(connManagerCommands) // Start the new connection manager
 	go core.SubscribeToApprovalEvents(rdb, clientCommands)

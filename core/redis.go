@@ -9,7 +9,7 @@ import (
 )
 
 func InitializeRedisConnection(redisAddress string) *redis.Client {
-	redisContext := utils.InitializeRedisContext()
+	redisContext := utils.GetRedisContext()
 	rdb := redis.NewClient(&redis.Options{
 		Addr: redisAddress,
 	})
@@ -20,7 +20,7 @@ func InitializeRedisConnection(redisAddress string) *redis.Client {
 	log.Println("Connected to Redis instance successfully.")
 
 	err = rdb.XGroupCreateMkStream(
-		utils.InitializeRedisContext(),
+		utils.GetRedisContext(),
 		utils.GetRedisStreamName(),
 		utils.GetRedisGroupName(), "$").Err()
 	if err != nil && err.Error() != "BUSYGROUP Consumer Group name already exists" {
@@ -33,7 +33,7 @@ func InitializeRedisConnection(redisAddress string) *redis.Client {
 
 func SubscribeToApprovalEvents(rdb *redis.Client, command chan models.ClientCommand) {
 	redisChannelName := utils.GetRedisChannelName()
-	pubsub := rdb.Subscribe(utils.InitializeRedisContext(), redisChannelName)
+	pubsub := rdb.Subscribe(utils.GetRedisContext(), redisChannelName)
 	defer pubsub.Close()
 
 	ch := pubsub.Channel()

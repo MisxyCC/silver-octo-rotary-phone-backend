@@ -76,9 +76,9 @@ func startWorker(workerCtx context.Context, workerID string, wg *sync.WaitGroup,
 
 					// --- NEW: Acknowledge the message ---
 					// This tells Redis we are done and prevents other workers from picking it up again.
-					rdb.XAck(utils.InitializeRedisContext(), utils.GetRedisStreamName(), utils.GetRedisGroupName(), message.ID)
+					rdb.XAck(utils.GetRedisContext(), utils.GetRedisStreamName(), utils.GetRedisGroupName(), message.ID)
 					// Publish completion event to Redis Pub/Sub for real-time notification.
-					rdb.Publish(utils.InitializeRedisContext(), utils.GetRedisChannelName(), jobID)
+					rdb.Publish(utils.GetRedisContext(), utils.GetRedisChannelName(), jobID)
 				}
 			}
 		}
